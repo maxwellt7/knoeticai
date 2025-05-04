@@ -7,8 +7,8 @@
 }
 
 body {
-  background-color: hsl(240, 10%, 3.9%);
-  color: hsl(0, 0%, 98%);
+  background-color: #191b24;
+  color: #f8f9fa;
   min-height: 100vh;
 }
 
@@ -20,11 +20,11 @@ body {
 }
 
 .logo:hover {
-  filter: drop-shadow(0 0 1em rgba(79, 209, 197, 0.8));
+  filter: drop-shadow(0 0 1em rgba(149, 128, 255, 0.8));
 }
 
 .logo.react:hover {
-  filter: drop-shadow(0 0 1em rgba(97, 218, 251, 0.8));
+  filter: drop-shadow(0 0 1em rgba(149, 128, 255, 0.8));
 }
 
 @keyframes logo-spin {
@@ -44,14 +44,14 @@ body {
 
 .card {
   padding: 2em;
-  background-color: hsla(217.2, 32.6%, 17.5%, 0.4);
-  border-radius: var(--radius);
-  border: 1px solid hsla(217.2, 32.6%, 25%, 0.4);
+  background-color: #22242f;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(10px);
 }
 
 .read-the-docs {
-  color: hsla(215, 20.2%, 65.1%, 1);
+  color: #a0a0a0;
 }
 
 .glow-cyan {
@@ -59,9 +59,84 @@ body {
 }
 
 .glow-purple {
-  box-shadow: 0 0 15px rgba(191, 143, 255, 0.5);
+  box-shadow: 0 0 15px rgba(149, 128, 255, 0.5);
 }
 
 .glow-green {
   box-shadow: 0 0 15px rgba(150, 230, 161, 0.5);
+}
+
+/* New classes for the modern UI */
+.assistant-card {
+  background-color: #22242f;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  transition: all 0.2s ease;
+}
+
+.assistant-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.assistant-card.personal {
+  border-top: 4px solid #4285f4;
+}
+
+.assistant-card.business {
+  border-top: 4px solid #34a853;
+}
+
+.assistant-card.stack {
+  border-top: 4px solid #9580ff;
+}
+
+.chat-container {
+  background-color: #22242f;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 1rem;
+  padding: 1rem;
+  height: 100%;
+}
+
+.chat-input {
+  background-color: #191b24;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+  padding: 0.75rem 1.5rem;
+  color: #f8f9fa;
+}
+
+.thinking-bubble {
+  background-color: #2d2f3a;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 9999px;
+  padding: 0.5rem 1rem;
+  display: inline-flex;
+  align-items: center;
+}
+
+.idea-log {
+  background-color: #22242f;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: #a0a0a0;
+}
+
+.time-badge {
+  background-color: #2d2f3a;
+  border-radius: 0.375rem;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  color: #f8f9fa;
 }

@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { formatDistanceToNow } from 'date-fns';
 
 type StackOption = {
   id: string;
@@ -32,12 +31,12 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
       <div
         className={`max-w-3/4 rounded-lg px-4 py-2 ${
           sender === 'user'
-            ? 'bg-blue-600 text-white'
+            ? 'bg-purple-600 text-white'
             : sender === 'system'
-              ? 'bg-gray-200 text-gray-800'
+              ? 'bg-[#2d2f3a] text-gray-200'
               : stack && stackOption
-                ? `${stackOption.color} bg-opacity-20 text-gray-800`
-                : 'bg-white border text-gray-800'
+                ? `bg-[#2d2f3a] text-gray-200`
+                : 'bg-[#2d2f3a] text-gray-200'
         }`}
       >
         {sender === 'bot' && stack && stackOption && (

@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -27,8 +28,10 @@ const ChatInput: React.FC<ChatInputProps> = ({
 }) => {
   const [inputMessage, setInputMessage] = useState('');
 
-  const handleSendMessage = () => {
+  const handleSendMessage = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (inputMessage.trim() === '') return;
+    
     onSendMessage(inputMessage);
     setInputMessage('');
   };
@@ -36,29 +39,31 @@ const ChatInput: React.FC<ChatInputProps> = ({
   const activeStackOption = activeStack ? stackOptions.find(s => s.id === activeStack) : null;
 
   return (
-    <div className="border-t p-4 bg-white">
-      <div className="flex space-x-2">
+    <div className="p-4">
+      <form onSubmit={handleSendMessage} className="relative">
         <Input
           value={inputMessage}
           onChange={(e) => setInputMessage(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
           placeholder={`Message ${activeTab === 'personal' ? 'personal' : 'business'} agent...`}
-          className="flex-1"
+          className="chat-input pr-12"
         />
         <Button
-          onClick={handleSendMessage}
+          type="submit" 
           disabled={inputMessage.trim() === '' || isLoading}
+          className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 bg-purple-600 text-white rounded-full h-8 w-8 flex items-center justify-center"
         >
-          Send
+          <Send className="h-4 w-4" />
         </Button>
-      </div>
+      </form>
+      
       {activeStack && activeStackOption && (
-        <div className="mt-2 flex items-center text-sm text-gray-600">
-          <div className={`h-2 w-2 rounded-full mr-2 ${activeStackOption.color}`}></div>
+        <div className="mt-2 flex items-center text-sm text-gray-400">
+          <div className={`h-2 w-2 rounded-full mr-2 bg-purple-500`}></div>
           <span>Active stack: {activeStackOption.name}</span>
           <button 
             onClick={onExitStack}
-            className="ml-2 text-xs text-red-500 hover:underline"
+            className="ml-2 text-xs text-red-400 hover:underline"
           >
             Exit Stack
           </button>

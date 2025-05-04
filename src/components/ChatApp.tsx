@@ -25,6 +25,8 @@ import LoginScreen from './LoginScreen';
 import ChatInput from './ChatInput';
 import StackOptions from './StackOptions';
 import ChatHistory from './ChatHistory';
+import AssistantSelection from './AssistantSelection';
+import ChatInterface from './ChatInterface';
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -90,6 +92,7 @@ const ChatApp: React.FC = () => {
   // New state for conversation history
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [showSelection, setShowSelection] = useState(true);
   
   const { toast } = useToast();
   const { user } = useAuth();
@@ -324,6 +327,29 @@ const ChatApp: React.FC = () => {
     });
   };
 
+  const handleSelectAssistant = (type: 'personal' | 'business' | 'stack') => {
+    setActiveTab(type);
+    if (type === 'stack') {
+      // For stack, we'll show the stack options
+      setIsStackMode(true);
+    } else {
+      setIsStackMode(false);
+      setActiveStack(null);
+    }
+    setShowSelection(false);
+  };
+
+  const handleBackToSelection = () => {
+    // Save current conversation if needed
+    if (messages.length > 0) {
+      saveCurrentConversation();
+    }
+    
+    // Reset states
+    setMessages([]);
+    setShowSelection(true);
+  };
+
   const changeConversationType = (newTab: string) => {
     if (activeTab === newTab && !isStackMode) return;
     
@@ -415,240 +441,76 @@ const ChatApp: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
+    <div className="flex flex-col h-screen bg-[#191b24]">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 bg-white border-b shadow-sm">
-        <h1 className="text-xl font-semibold text-gray-800">Multi-Agent Chat</h1>
-        <div className="flex items-center space-x-4">
-          <div className="flex space-x-3">
-            {/* Connection indicators */}
-            <div className="flex items-center">
-              <div 
-                className={`h-2 w-2 rounded-full mr-2 ${isConnected.supabase ? 'bg-green-500' : 'bg-gray-300'}`} 
-              />
-              <button 
-                onClick={() => toggleConnection('supabase')}
-                className="text-sm text-gray-700 hover:text-blue-600"
-              >
-                Supabase
-              </button>
-            </div>
-            <div className="flex items-center">
-              <div 
-                className={`h-2 w-2 rounded-full mr-2 ${isConnected.notion ? 'bg-green-500' : 'bg-gray-300'}`} 
-              />
-              <button 
-                onClick={() => toggleConnection('notion')}
-                className="text-sm text-gray-700 hover:text-blue-600"
-              >
-                Notion
-              </button>
-            </div>
-            <div className="flex items-center">
-              <div 
-                className={`h-2 w-2 rounded-full mr-2 ${isConnected.clickup ? 'bg-green-500' : 'bg-gray-300'}`} 
-              />
-              <button 
-                onClick={() => toggleConnection('clickup')}
-                className="text-sm text-gray-700 hover:text-blue-600"
-              >
-                ClickUp
-              </button>
-            </div>
+      <div className="flex items-center justify-between p-4">
+        <div className="flex items-center">
+          <div className="text-purple-500 mr-2">
+            <MessageSquare className="h-6 w-6" />
           </div>
-          
-          {/* History button */}
-          <button
-            onClick={() => setShowHistory(!showHistory)}
-            className="flex items-center text-gray-700 hover:text-blue-600 md:hidden"
+          <h1 className="text-xl font-semibold text-white">Multi-Agent Chat</h1>
+        </div>
+        
+        <div className="flex items-center space-x-4">
+          {/* Settings button */}
+          <Button
+            onClick={() => setShowSettings(!showSettings)}
+            variant="ghost"
+            size="icon"
+            className="text-white"
           >
-            <History className="h-5 w-5" />
-          </button>
+            <Settings className="h-5 w-5" />
+          </Button>
+          
+          {/* Account button */}
+          <Button
+            variant="ghost"
+            className="text-white flex items-center"
+          >
+            <span className="mr-2">Account</span>
+            <User className="h-5 w-5" />
+          </Button>
           
           {/* Settings dropdown */}
-          <div className="relative">
-            <button 
-              onClick={() => setShowSettings(!showSettings)}
-              className="flex items-center text-gray-700 hover:text-blue-600"
-            >
-              <Settings className="h-5 w-5" />
-            </button>
-            
-            {showSettings && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 border">
-                <button
-                  onClick={() => {
-                    setShowApiKeys(!showApiKeys);
-                    setShowSettings(false);
-                  }}
-                  className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                >
-                  <Key className="h-4 w-4 mr-2" />
-                  API Keys
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                >
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Logout
-                </button>
-              </div>
-            )}
-          </div>
-          
-          {/* User profile */}
-          <div className="flex items-center">
-            <span className="text-sm text-gray-700 mr-2">{currentUser?.name}</span>
-            <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-600">
-              {currentUser?.avatar ? (
-                <img src={currentUser.avatar} alt="User" className="h-8 w-8 rounded-full" />
-              ) : (
-                <User className="h-5 w-5" />
-              )}
+          {showSettings && (
+            <div className="absolute right-4 top-14 w-48 bg-[#22242f] rounded-lg shadow-lg py-1 z-10 border border-white/5">
+              <button
+                onClick={() => {
+                  setShowApiKeys(!showApiKeys);
+                  setShowSettings(false);
+                }}
+                className="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-[#2d2f3a] w-full text-left"
+              >
+                <Key className="h-4 w-4 mr-2" />
+                API Keys
+              </button>
+              <button
+                onClick={handleLogout}
+                className="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-[#2d2f3a] w-full text-left"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Logout
+              </button>
             </div>
-          </div>
+          )}
         </div>
       </div>
       
       {/* Main content */}
-      <div className="flex h-full">
-        {/* Main Sidebar */}
-        <div className="w-64 bg-white border-r flex flex-col">
-          <div className="p-4 border-b">
-            <div className="flex flex-col space-y-2">
-              <button
-                onClick={() => changeConversationType('personal')}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg ${activeTab === 'personal' && !isStackMode ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100'}`}
-              >
-                <MessageSquare className="h-5 w-5" />
-                <span>Personal Agent</span>
-              </button>
-              <button
-                onClick={() => changeConversationType('business')}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg ${activeTab === 'business' ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100'}`}
-              >
-                <ClipboardList className="h-5 w-5" />
-                <span>Business Agent</span>
-              </button>
-              <button
-                onClick={() => setShowHistory(!showHistory)}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 md:hidden`}
-              >
-                <History className="h-5 w-5" />
-                <span>Chat History</span>
-              </button>
-            </div>
-          </div>
-          
-          {/* Stack Options */}
-          <StackOptions 
-            options={stackOptions}
-            activeStack={activeStack}
-            onStackSelect={startStackMode}
-          />
-          
-          {/* Data Sources */}
-          <div className="p-4">
-            <h3 className="font-medium text-gray-700 mb-3">Data Sources</h3>
-            <div className="space-y-2">
-              <DataSourceItem 
-                name="Supabase" 
-                icon={<Database className="h-4 w-4" />}
-                isConnected={isConnected.supabase}
-              />
-              <DataSourceItem 
-                name="Notion" 
-                icon={
-                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M6 6H18V18H6V6Z" fill="currentColor" />
-                  </svg>
-                }
-                isConnected={isConnected.notion}
-              />
-              <DataSourceItem 
-                name="ClickUp" 
-                icon={
-                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M16 4H8C5.79086 4 4 5.79086 4 8V16C4 18.2091 5.79086 20 8 20H16C18.2091 20 20 18.2091 20 16V8C20 5.79086 18.2091 4 16 4Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M9 12L11 14L15 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                }
-                isConnected={isConnected.clickup}
-              />
-            </div>
-          </div>
-        </div>
-        
-        {/* Chat History Sidebar */}
-        <div className={`${showHistory ? 'block' : 'hidden'} md:block w-72 bg-white border-r flex flex-col`}>
-          <div className="p-4 border-b">
-            <h2 className="font-semibold text-gray-800">Chat History</h2>
-            <p className="text-xs text-gray-500 mt-1">Previous conversations</p>
-          </div>
-          <div className="flex-1 overflow-y-auto">
-            <ChatHistory conversations={conversations} onSelect={loadConversation} />
-          </div>
-        </div>
-        
-        {/* Chat area */}
-        <div className="flex-1 flex flex-col">
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {messages.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-gray-500">
-                <div className="mb-4">
-                  {activeTab === 'personal' ? 
-                    <MessageSquare className="h-12 w-12 text-blue-200" /> : 
-                    <ClipboardList className="h-12 w-12 text-blue-200" />
-                  }
-                </div>
-                <p className="text-lg mb-1">No messages yet</p>
-                <p className="text-sm max-w-md text-center">
-                  {activeTab === 'personal' 
-                    ? "Chat with your personal agent to get insights about your habits, health, and personal data." 
-                    : "Chat with your business agent to track projects, tasks, and get updates on your business metrics."}
-                </p>
-              </div>
-            ) : (
-              messages.map((message) => (
-                <ChatMessage
-                  key={message.id}
-                  id={message.id}
-                  text={message.text}
-                  sender={message.sender}
-                  timestamp={message.timestamp}
-                  stack={message.stack}
-                  stackOptions={stackOptions}
-                />
-              ))
-            )}
-            {isLoading && (
-              <div className="flex justify-start">
-                <div className="max-w-3/4 rounded-lg px-4 py-2 bg-white border text-gray-800">
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                    <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                    <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-          
-          {/* Input area */}
-          <ChatInput 
+      <div className="flex-1 px-4 pb-4 overflow-hidden">
+        {showSelection ? (
+          <AssistantSelection onSelectAssistant={handleSelectAssistant} />
+        ) : (
+          <ChatInterface
+            activeAssistant={activeTab as 'personal' | 'business' | 'stack'}
+            messages={messages}
             onSendMessage={handleSendMessage}
+            onBackClick={handleBackToSelection}
             isLoading={isLoading}
-            activeTab={activeTab}
-            activeStack={activeStack}
-            stackOptions={stackOptions}
-            onExitStack={() => {
-              setIsStackMode(false);
-              setActiveStack(null);
-            }}
+            conversations={conversations}
+            onSelectConversation={loadConversation}
           />
-        </div>
+        )}
       </div>
       
       {/* API Keys Modal */}
