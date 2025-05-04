@@ -28,7 +28,7 @@ interface ChatHistoryProps {
 const ChatHistory: React.FC<ChatHistoryProps> = ({ conversations, onSelect }) => {
   if (conversations.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-32 text-gray-500 p-4">
+      <div className="flex flex-col items-center justify-center h-32 text-gray-400 p-4 bg-zinc-900 rounded-md bg-opacity-50 backdrop-blur-sm">
         <p className="text-sm">No conversations yet</p>
         <p className="text-xs mt-1">Your chat history will appear here</p>
       </div>
@@ -36,7 +36,7 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({ conversations, onSelect }) =>
   }
 
   return (
-    <div className="divide-y">
+    <div className="space-y-2">
       {conversations.map((conversation) => {
         // Get the right icon based on conversation type
         let icon;
@@ -56,19 +56,34 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({ conversations, onSelect }) =>
         // Get message count
         const messageCount = conversation.messages.length;
 
+        // Determine the glow color based on conversation type
+        const glowColor = conversation.type === 'stack' ? 
+          'group-hover:shadow-[0_0_10px_rgba(79,209,197,0.5)]' : 
+          conversation.type === 'business' ? 
+            'group-hover:shadow-[0_0_10px_rgba(150,230,161,0.5)]' : 
+            'group-hover:shadow-[0_0_10px_rgba(191,143,255,0.5)]';
+
+        // Determine the background and accent colors based on conversation type
+        const bgColor = 'bg-zinc-900 bg-opacity-60 group-hover:bg-zinc-800';
+        const iconBgColor = conversation.type === 'stack' ? 
+          'bg-cyan-950 text-cyan-400' : 
+          conversation.type === 'business' ? 
+            'bg-green-950 text-green-400' : 
+            'bg-purple-950 text-purple-400';
+        
         return (
           <button
             key={conversation.id}
-            className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors focus:outline-none focus:bg-gray-50"
+            className={`w-full text-left px-4 py-3 rounded-md transition-all duration-300 group ${bgColor} ${glowColor} backdrop-blur-sm border border-gray-800 group-hover:border-gray-700`}
             onClick={() => onSelect(conversation.id)}
           >
             <div className="flex items-start">
-              <div className={`p-2 rounded-md mr-3 ${conversation.type === 'stack' ? 'bg-blue-100 text-blue-600' : conversation.type === 'business' ? 'bg-green-100 text-green-600' : 'bg-purple-100 text-purple-600'}`}>
+              <div className={`p-2 rounded-md mr-3 ${iconBgColor}`}>
                 {icon}
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-medium text-gray-900 truncate">{conversation.title}</h3>
-                <p className="text-xs text-gray-500 mt-1">
+                <h3 className="font-medium text-gray-200 truncate">{conversation.title}</h3>
+                <p className="text-xs text-gray-400 mt-1">
                   {messageCount} {messageCount === 1 ? 'message' : 'messages'} · {timeAgo}
                 </p>
               </div>
