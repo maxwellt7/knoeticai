@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   MessageSquare, 
@@ -16,7 +15,8 @@ import {
   Settings, 
   User, 
   LogOut, 
-  Key 
+  Key,
+  History
 } from 'lucide-react';
 import ChatMessage from './ChatMessage';
 import DataSourceItem from './DataSourceItem';
@@ -24,6 +24,8 @@ import ApiKeysModal from './ApiKeysModal';
 import LoginScreen from './LoginScreen';
 import ChatInput from './ChatInput';
 import StackOptions from './StackOptions';
+import ChatHistory from './ChatHistory';
+import { useToast } from "@/hooks/use-toast";
 
 // Types
 interface Message {
@@ -48,6 +50,15 @@ interface UserProfile {
   avatar: string;
 }
 
+interface Conversation {
+  id: string;
+  title: string;
+  type: 'personal' | 'business' | 'stack';
+  stackId?: string;
+  messages: Message[];
+  timestamp: string;
+}
+
 const ChatApp: React.FC = () => {
   // State
   const [activeTab, setActiveTab] = useState('personal');
@@ -70,6 +81,11 @@ const ChatApp: React.FC = () => {
     notion: false,
     clickup: false
   });
+  // New state for conversation history
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+  
+  const { toast } = useToast();
 
   // Stack options and questions
   const stackOptions: StackOption[] = [
@@ -124,6 +140,41 @@ const ChatApp: React.FC = () => {
       "What's one small step you could take today?",
       "How will you track your progress?"
     ]
+  };
+
+  // Helper function to save current conversation
+  const saveCurrentConversation = () => {
+    if (messages.length === 0) return;
+    
+    let title = "";
+    let type: 'personal' | 'business' | 'stack' = 'personal';
+    
+    if (isStackMode && activeStack) {
+      title = `${stackOptions.find(s => s.id === activeStack)?.name} Reflection`;
+      type = 'stack';
+    } else if (activeTab === 'business') {
+      title = "Business Chat";
+      type = 'business';
+    } else {
+      title = "Personal Chat";
+      type = 'personal';
+    }
+    
+    const newConversation: Conversation = {
+      id: Date.now().toString(),
+      title,
+      type,
+      stackId: activeStack || undefined,
+      messages: [...messages],
+      timestamp: new Date().toLocaleString()
+    };
+    
+    setConversations(prev => [newConversation, ...prev]);
+    
+    toast({
+      title: "Conversation saved",
+      description: "Your chat has been saved to history",
+    });
   };
 
   // Handlers
@@ -182,10 +233,70 @@ const ChatApp: React.FC = () => {
     }, 1000);
   };
 
+  const loadConversation = (conversationId: string) => {
+    const conversation = conversations.find(conv => conv.id === conversationId);
+    if (!conversation) return;
+    
+    // Save current conversation first if there are messages
+    if (messages.length > 0) {
+      saveCurrentConversation();
+    }
+    
+    // Set the appropriate mode
+    if (conversation.type === 'stack' && conversation.stackId) {
+      setActiveTab('personal');
+      setIsStackMode(true);
+      setActiveStack(conversation.stackId);
+    } else if (conversation.type === 'business') {
+      setActiveTab('business');
+      setIsStackMode(false);
+      setActiveStack(null);
+    } else {
+      setActiveTab('personal');
+      setIsStackMode(false);
+      setActiveStack(null);
+    }
+    
+    // Load the messages
+    setMessages(conversation.messages);
+    
+    // Close the history sidebar on mobile
+    if (window.innerWidth < 768) {
+      setShowHistory(false);
+    }
+    
+    toast({
+      title: "Conversation loaded",
+      description: `Loaded "${conversation.title}"`,
+    });
+  };
+
+  const changeConversationType = (newTab: string) => {
+    if (activeTab === newTab && !isStackMode) return;
+    
+    // Save current conversation if there are messages
+    if (messages.length > 0) {
+      saveCurrentConversation();
+    }
+    
+    // Set the new tab
+    setActiveTab(newTab);
+    setIsStackMode(false);
+    setActiveStack(null);
+    
+    // Clear the messages
+    setMessages([]);
+  };
+
   const startStackMode = (stackId: string) => {
+    // Save current conversation if there are messages
+    if (messages.length > 0) {
+      saveCurrentConversation();
+    }
+    
     setIsStackMode(true);
     setActiveStack(stackId);
-    setMessages([...messages, {
+    setMessages([{
       id: Date.now(),
       text: `Starting ${stackOptions.find(s => s.id === stackId)!.name} reflection...`,
       sender: 'system',
@@ -281,6 +392,7 @@ const ChatApp: React.FC = () => {
         <h1 className="text-xl font-semibold text-gray-800">Multi-Agent Chat</h1>
         <div className="flex items-center space-x-4">
           <div className="flex space-x-3">
+            {/* Connection indicators */}
             <div className="flex items-center">
               <div 
                 className={`h-2 w-2 rounded-full mr-2 ${isConnected.supabase ? 'bg-green-500' : 'bg-gray-300'}`} 
@@ -315,6 +427,14 @@ const ChatApp: React.FC = () => {
               </button>
             </div>
           </div>
+          
+          {/* History button */}
+          <button
+            onClick={() => setShowHistory(!showHistory)}
+            className="flex items-center text-gray-700 hover:text-blue-600 md:hidden"
+          >
+            <History className="h-5 w-5" />
+          </button>
           
           {/* Settings dropdown */}
           <div className="relative">
@@ -364,31 +484,30 @@ const ChatApp: React.FC = () => {
       
       {/* Main content */}
       <div className="flex h-full">
-        {/* Sidebar */}
+        {/* Main Sidebar */}
         <div className="w-64 bg-white border-r flex flex-col">
           <div className="p-4 border-b">
             <div className="flex flex-col space-y-2">
               <button
-                onClick={() => {
-                  setActiveTab('personal');
-                  setIsStackMode(false);
-                  setActiveStack(null);
-                }}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg ${activeTab === 'personal' ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100'}`}
+                onClick={() => changeConversationType('personal')}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg ${activeTab === 'personal' && !isStackMode ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100'}`}
               >
                 <MessageSquare className="h-5 w-5" />
                 <span>Personal Agent</span>
               </button>
               <button
-                onClick={() => {
-                  setActiveTab('business');
-                  setIsStackMode(false);
-                  setActiveStack(null);
-                }}
+                onClick={() => changeConversationType('business')}
                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg ${activeTab === 'business' ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100'}`}
               >
                 <ClipboardList className="h-5 w-5" />
                 <span>Business Agent</span>
+              </button>
+              <button
+                onClick={() => setShowHistory(!showHistory)}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 md:hidden`}
+              >
+                <History className="h-5 w-5" />
+                <span>Chat History</span>
               </button>
             </div>
           </div>
@@ -429,6 +548,17 @@ const ChatApp: React.FC = () => {
                 isConnected={isConnected.clickup}
               />
             </div>
+          </div>
+        </div>
+        
+        {/* Chat History Sidebar */}
+        <div className={`${showHistory ? 'block' : 'hidden'} md:block w-72 bg-white border-r flex flex-col`}>
+          <div className="p-4 border-b">
+            <h2 className="font-semibold text-gray-800">Chat History</h2>
+            <p className="text-xs text-gray-500 mt-1">Previous conversations</p>
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            <ChatHistory conversations={conversations} onSelect={loadConversation} />
           </div>
         </div>
         
