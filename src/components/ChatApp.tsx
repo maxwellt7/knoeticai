@@ -378,7 +378,7 @@ const ChatApp: React.FC = () => {
   const handleSelectAssistant = (type: 'personal' | 'business' | 'stack') => {
     setActiveTab(type);
     if (type === 'stack') {
-      // For stack, we'll show the stack options
+      // Show stack options in sidebar
       setIsStackMode(true);
     } else {
       setIsStackMode(false);
@@ -390,7 +390,7 @@ const ChatApp: React.FC = () => {
   const handleSelectStack = (stackId: string) => {
     setActiveTab('personal');
     setIsStackMode(true);
-    setActiveStack(null);
+    setActiveStack(stackId);
     setShowSelection(false);
     
     // Start the selected stack immediately
@@ -570,15 +570,28 @@ const ChatApp: React.FC = () => {
             onSelectStack={handleSelectStack}
           />
         ) : (
-          <ChatInterface
-            activeAssistant={activeTab as 'personal' | 'business' | 'stack'}
-            messages={messages}
-            onSendMessage={handleSendMessage}
-            onBackClick={handleBackToSelection}
-            isLoading={isLoading}
-            conversations={conversations}
-            onSelectConversation={loadConversation}
-          />
+          <div className="flex h-full">
+            {isStackMode && (
+              <StackOptions
+                options={stackOptions}
+                activeStack={activeStack}
+                onStackSelect={handleSelectStack}
+                isConnected={isConnected}
+                toggleConnection={toggleConnection}
+              />
+            )}
+            <div className={`flex-1 ${isStackMode ? 'ml-4' : ''}`}>
+              <ChatInterface
+                activeAssistant={activeTab as 'personal' | 'business' | 'stack'}
+                messages={messages}
+                onSendMessage={handleSendMessage}
+                onBackClick={handleBackToSelection}
+                isLoading={isLoading}
+                conversations={conversations}
+                onSelectConversation={loadConversation}
+              />
+            </div>
+          </div>
         )}
       </div>
       
