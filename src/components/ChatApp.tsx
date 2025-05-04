@@ -27,6 +27,7 @@ import StackOptions from './StackOptions';
 import ChatHistory from './ChatHistory';
 import AssistantSelection from './AssistantSelection';
 import ChatInterface from './ChatInterface';
+import { Button } from '@/components/ui/button'; // Added missing Button import
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
