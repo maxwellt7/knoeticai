@@ -1,6 +1,7 @@
 
 import React from 'react';
-import { MessageSquare, Briefcase, Circle } from 'lucide-react';
+import { MessageSquare, Briefcase } from 'lucide-react';
+import { getIconForStackId } from './ChatIcons';
 
 interface AssistantSelectionProps {
   onSelectAssistant: (type: 'personal' | 'business' | 'stack') => void;
@@ -49,7 +50,7 @@ const AssistantSelection: React.FC<AssistantSelectionProps> = ({ onSelectAssista
           onClick={() => onSelectAssistant('stack')}
         >
           <div className="p-2 rounded-full bg-purple-500/20 w-fit mb-4">
-            <Circle className="h-6 w-6 text-purple-400" />
+            {getIconForStackId('idea')}
           </div>
           <h2 className="text-lg font-medium text-white mb-2">Stack Assistant</h2>
           <p className="text-gray-400 text-sm">

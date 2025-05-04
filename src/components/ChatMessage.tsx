@@ -1,12 +1,6 @@
 
 import React from 'react';
-
-type StackOption = {
-  id: string;
-  name: string;
-  color: string;
-  icon: JSX.Element;
-};
+import { stackIcons } from './ChatIcons';
 
 interface ChatMessageProps {
   id: number;
@@ -14,7 +8,6 @@ interface ChatMessageProps {
   sender: 'user' | 'bot' | 'system';
   timestamp: string;
   stack?: string;
-  stackOptions?: StackOption[];
 }
 
 const ChatMessage: React.FC<ChatMessageProps> = ({
@@ -22,9 +15,28 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
   sender,
   timestamp,
   stack,
-  stackOptions,
 }) => {
-  const stackOption = stack && stackOptions ? stackOptions.find(s => s.id === stack) : undefined;
+  const getStackIcon = () => {
+    if (stack && stack in stackIcons) {
+      const IconComponent = stackIcons[stack];
+      return <IconComponent className="h-5 w-5 text-white" />;
+    }
+    return null;
+  };
+  
+  const getStackName = () => {
+    switch(stack) {
+      case 'happy': return 'Happy';
+      case 'gratitude': return 'Gratitude';
+      case 'abundance': return 'Abundance';
+      case 'anger': return 'Anger';
+      case 'idea': return 'Idea';
+      case 'discover': return 'Discover';
+      case 'testing': return 'Testing';
+      case 'improvement': return 'Improvement';
+      default: return stack;
+    }
+  };
   
   return (
     <div className={`flex mb-4 ${sender === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}>
@@ -34,16 +46,14 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
             ? 'bg-purple-600 text-white rounded-tr-none'
             : sender === 'system'
               ? 'bg-[#2d2f3a] text-gray-200 rounded-tl-none'
-              : stack && stackOption
-                ? `bg-[#2d2f3a] text-gray-200 rounded-tl-none`
-                : 'bg-[#2d2f3a] text-gray-200 rounded-tl-none'
+              : 'bg-[#2d2f3a] text-gray-200 rounded-tl-none'
         }`}
       >
-        {sender === 'bot' && stack && stackOption && (
+        {sender === 'bot' && stack && (
           <div className="flex items-center mb-2 pb-2 border-b border-gray-600/30">
-            <div className="mr-2">{stackOption.icon}</div>
+            <div className="mr-2">{getStackIcon()}</div>
             <span className="text-xs font-medium">
-              {stackOption.name} Reflection
+              {getStackName()} Reflection
             </span>
           </div>
         )}

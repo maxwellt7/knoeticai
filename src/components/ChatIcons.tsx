@@ -12,6 +12,7 @@ import {
   TrendingUp,
   Circle
 } from 'lucide-react';
+import React from 'react';
 
 // Map stack IDs to their respective icons
 export const stackIcons: Record<string, typeof MessageSquare> = {
@@ -26,13 +27,13 @@ export const stackIcons: Record<string, typeof MessageSquare> = {
 };
 
 export const getIconForStackId = (stackId: string) => {
-  return stackIcons[stackId] || MessageSquare;
+  const IconComponent = stackIcons[stackId] || MessageSquare;
+  return <IconComponent className="h-5 w-5" />;
 };
 
 export const getIconForChatType = (type: 'personal' | 'business' | 'stack', stackId?: string) => {
   if (type === 'stack' && stackId && stackIcons[stackId]) {
-    const Icon = stackIcons[stackId];
-    return <Icon className="h-5 w-5" />;
+    return getIconForStackId(stackId);
   }
   
   if (type === 'business') {

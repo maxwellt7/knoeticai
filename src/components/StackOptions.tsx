@@ -1,10 +1,10 @@
 
 import React from 'react';
+import { getIconForStackId } from './ChatIcons';
 
 interface StackOption {
   id: string;
   name: string;
-  icon: JSX.Element;
   color: string;
 }
 
@@ -28,7 +28,7 @@ const StackOptions: React.FC<StackOptionsProps> = ({ options, activeStack, onSta
             }`}
           >
             <div className={`p-1 rounded-full ${stack.color} bg-opacity-10 mb-1`}>
-              {stack.icon}
+              {getIconForStackId(stack.id)}
             </div>
             <span className="text-xs font-medium text-gray-700">{stack.name}</span>
           </button>
