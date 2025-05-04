@@ -104,13 +104,13 @@ const ChatApp: React.FC = () => {
 
   // Stack options and questions
   const stackOptions: StackOption[] = [
+    { id: 'idea', name: 'Idea Assistant', icon: <PenTool className="h-5 w-5" />, color: 'bg-indigo-500' },
     { id: 'reflection', name: 'Reflection', icon: <ThumbsUp className="h-5 w-5" />, color: 'bg-blue-500' },
     { id: 'gratitude', name: 'Gratitude', icon: <Heart className="h-5 w-5" />, color: 'bg-pink-500' },
     { id: 'goals', name: 'Goals', icon: <TrendingUp className="h-5 w-5" />, color: 'bg-green-500' },
     { id: 'creativity', name: 'Creativity', icon: <Lightbulb className="h-5 w-5" />, color: 'bg-yellow-500' },
     { id: 'journal', name: 'Journal', icon: <Book className="h-5 w-5" />, color: 'bg-purple-500' },
     { id: 'relationships', name: 'Relationships', icon: <HeartHandshake className="h-5 w-5" />, color: 'bg-red-500' },
-    { id: 'idea', name: 'Idea', icon: <PenTool className="h-5 w-5" />, color: 'bg-indigo-500' }
   ];
 
   const stackQuestions: Record<string, string[]> = {
@@ -387,6 +387,16 @@ const ChatApp: React.FC = () => {
     setShowSelection(false);
   };
 
+  const handleSelectStack = (stackId: string) => {
+    setActiveTab('personal');
+    setIsStackMode(true);
+    setActiveStack(null);
+    setShowSelection(false);
+    
+    // Start the selected stack immediately
+    startStackMode(stackId);
+  };
+
   const handleBackToSelection = () => {
     // Save current conversation if needed
     if (messages.length > 0) {
@@ -555,7 +565,10 @@ const ChatApp: React.FC = () => {
       {/* Main content */}
       <div className="flex-1 px-4 pb-4 overflow-hidden">
         {showSelection ? (
-          <AssistantSelection onSelectAssistant={handleSelectAssistant} />
+          <AssistantSelection 
+            onSelectAssistant={handleSelectAssistant} 
+            onSelectStack={handleSelectStack}
+          />
         ) : (
           <ChatInterface
             activeAssistant={activeTab as 'personal' | 'business' | 'stack'}

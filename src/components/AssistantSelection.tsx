@@ -5,9 +5,10 @@ import { getIconForStackId } from './ChatIcons';
 
 interface AssistantSelectionProps {
   onSelectAssistant: (type: 'personal' | 'business' | 'stack') => void;
+  onSelectStack?: (stackId: string) => void;
 }
 
-const AssistantSelection: React.FC<AssistantSelectionProps> = ({ onSelectAssistant }) => {
+const AssistantSelection: React.FC<AssistantSelectionProps> = ({ onSelectAssistant, onSelectStack }) => {
   return (
     <div className="h-full flex flex-col">
       <div className="flex flex-col items-center justify-center mb-10 mt-8">
@@ -18,7 +19,7 @@ const AssistantSelection: React.FC<AssistantSelectionProps> = ({ onSelectAssista
         <p className="text-gray-400 text-lg">Choose your assistant type</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
         <div 
           className="assistant-card personal cursor-pointer"
           onClick={() => onSelectAssistant('personal')}
@@ -50,11 +51,30 @@ const AssistantSelection: React.FC<AssistantSelectionProps> = ({ onSelectAssista
           onClick={() => onSelectAssistant('stack')}
         >
           <div className="p-2 rounded-full bg-purple-500/20 w-fit mb-4">
-            <PenTool className="h-6 w-6 text-purple-400" />
+            <Circle className="h-6 w-6 text-purple-400" fill="rgba(139, 92, 246, 0.2)" />
           </div>
           <h2 className="text-lg font-medium text-white mb-2">Stack Assistant</h2>
           <p className="text-gray-400 text-sm">
             Use guided conversations with structured questions to help you reflect and gain insights.
+          </p>
+        </div>
+        
+        <div 
+          className="assistant-card idea cursor-pointer"
+          onClick={() => {
+            if (onSelectStack) {
+              onSelectStack('idea');
+            } else {
+              onSelectAssistant('stack');
+            }
+          }}
+        >
+          <div className="p-2 rounded-full bg-indigo-500/20 w-fit mb-4">
+            <PenTool className="h-6 w-6 text-indigo-400" />
+          </div>
+          <h2 className="text-lg font-medium text-white mb-2">Idea Assistant</h2>
+          <p className="text-gray-400 text-sm">
+            Evaluate and flesh out your ideas through a structured framework to assess alignment with your goals.
           </p>
         </div>
       </div>
