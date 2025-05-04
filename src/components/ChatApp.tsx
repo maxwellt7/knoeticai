@@ -17,7 +17,10 @@ import {
   LogOut, 
   Key,
   History,
-  Circle
+  Circle,
+  Book,
+  HeartHandshake,
+  PenTool
 } from 'lucide-react';
 import ChatMessage from './ChatMessage';
 import DataSourceItem from './DataSourceItem';
@@ -101,56 +104,50 @@ const ChatApp: React.FC = () => {
 
   // Stack options and questions
   const stackOptions: StackOption[] = [
-    { id: 'happy', name: 'Happy', icon: <ThumbsUp className="h-5 w-5" />, color: 'bg-yellow-500' },
+    { id: 'reflection', name: 'Reflection', icon: <ThumbsUp className="h-5 w-5" />, color: 'bg-blue-500' },
     { id: 'gratitude', name: 'Gratitude', icon: <Heart className="h-5 w-5" />, color: 'bg-pink-500' },
-    { id: 'abundance', name: 'Abundance', icon: <Zap className="h-5 w-5" />, color: 'bg-purple-500' },
-    { id: 'anger', name: 'Anger', icon: <Flame className="h-5 w-5" />, color: 'bg-red-500' },
-    { id: 'idea', name: 'Idea', icon: <Lightbulb className="h-5 w-5" />, color: 'bg-blue-500' },
-    { id: 'discover', name: 'Discover', icon: <Compass className="h-5 w-5" />, color: 'bg-green-500' },
-    { id: 'testing', name: 'Testing', icon: <FlaskConical className="h-5 w-5" />, color: 'bg-orange-500' },
-    { id: 'improvement', name: 'Improvement', icon: <TrendingUp className="h-5 w-5" />, color: 'bg-indigo-500' }
+    { id: 'goals', name: 'Goals', icon: <TrendingUp className="h-5 w-5" />, color: 'bg-green-500' },
+    { id: 'creativity', name: 'Creativity', icon: <Lightbulb className="h-5 w-5" />, color: 'bg-yellow-500' },
+    { id: 'journal', name: 'Journal', icon: <Book className="h-5 w-5" />, color: 'bg-purple-500' },
+    { id: 'relationships', name: 'Relationships', icon: <HeartHandshake className="h-5 w-5" />, color: 'bg-red-500' }
   ];
 
   const stackQuestions: Record<string, string[]> = {
-    happy: [
-      "What made you smile today?",
-      "What's one positive thing that happened recently?",
-      "How can you spread happiness to someone else today?"
+    reflection: [
+      "What's one thing that went well for you today?",
+      "What's something you found challenging recently?",
+      "What's one lesson you learned from your experiences this week?",
+      "How would you like to approach similar situations in the future?"
     ],
     gratitude: [
-      "What are three things you're grateful for right now?",
-      "Who has helped you recently that you appreciate?",
-      "What's something in your environment you're thankful for?"
+      "Name three things you're grateful for in this moment.",
+      "Who is someone that has positively impacted your life recently?",
+      "What's something in your environment or daily routine you appreciate?",
+      "What opportunity are you thankful to have right now?"
     ],
-    abundance: [
-      "What resources do you have in abundance right now?",
-      "Where do you see opportunities for growth?",
-      "How can you create more value with what you already have?"
+    goals: [
+      "What's one important goal you're working toward right now?",
+      "What small step could you take today to move closer to your goal?",
+      "What obstacles might stand in your way?",
+      "How might you overcome these obstacles?"
     ],
-    anger: [
-      "What triggered this feeling?",
-      "What's underneath this anger?",
-      "What constructive action can you take with this energy?"
+    creativity: [
+      "What creative project or idea has been on your mind lately?",
+      "What's one way you could approach this idea differently?",
+      "What resources would help you bring this idea to life?",
+      "How might you carve out time to work on this creative pursuit?"
     ],
-    idea: [
-      "Describe your idea in one sentence.",
-      "What problem does this idea solve?",
-      "What's the next step to develop this idea further?"
+    journal: [
+      "How would you describe your mood today?",
+      "What was the highlight of your day?",
+      "What's something that's been on your mind lately?",
+      "If you could change one thing about your day, what would it be and why?"
     ],
-    discover: [
-      "What are you curious about right now?",
-      "What patterns have you noticed lately?",
-      "What would you like to learn more about?"
-    ],
-    testing: [
-      "What hypothesis are you testing?",
-      "How will you measure success?",
-      "What's the smallest experiment you could run?"
-    ],
-    improvement: [
-      "What specific area would you like to improve?",
-      "What's one small step you could take today?",
-      "How will you track your progress?"
+    relationships: [
+      "Who is someone important in your life that you'd like to connect with more?",
+      "What quality do you most appreciate about this person?",
+      "What's one way you could strengthen this relationship?",
+      "How do healthy relationships contribute to your wellbeing?"
     ]
   };
 
@@ -379,7 +376,7 @@ const ChatApp: React.FC = () => {
     setActiveStack(stackId);
     setMessages([{
       id: Date.now(),
-      text: `Starting ${stackOptions.find(s => s.id === stackId)!.name} reflection...`,
+      text: `Starting ${stackOptions.find(s => s.id === stackId)!.name} conversation...`,
       sender: 'system',
       timestamp: new Date().toLocaleTimeString()
     }, {

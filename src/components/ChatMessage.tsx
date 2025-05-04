@@ -26,14 +26,12 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
   
   const getStackName = () => {
     switch(stack) {
-      case 'happy': return 'Happy';
+      case 'reflection': return 'Reflection';
       case 'gratitude': return 'Gratitude';
-      case 'abundance': return 'Abundance';
-      case 'anger': return 'Anger';
-      case 'idea': return 'Idea';
-      case 'discover': return 'Discover';
-      case 'testing': return 'Testing';
-      case 'improvement': return 'Improvement';
+      case 'goals': return 'Goals';
+      case 'creativity': return 'Creativity';
+      case 'journal': return 'Journal';
+      case 'relationships': return 'Relationships';
       default: return stack;
     }
   };
@@ -53,7 +51,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
           <div className="flex items-center mb-2 pb-2 border-b border-gray-600/30">
             <div className="mr-2">{getStackIcon()}</div>
             <span className="text-xs font-medium">
-              {getStackName()} Reflection
+              {getStackName()} Assistant
             </span>
           </div>
         )}

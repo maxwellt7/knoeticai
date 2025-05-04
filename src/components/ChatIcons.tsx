@@ -10,20 +10,21 @@ import {
   Compass, 
   FlaskConical, 
   TrendingUp,
-  Circle
+  Circle,
+  Book,
+  HeartHandshake,
+  PenTool
 } from 'lucide-react';
 import React from 'react';
 
 // Map stack IDs to their respective icons
 export const stackIcons: Record<string, typeof MessageSquare> = {
-  'happy': ThumbsUp,
+  'reflection': ThumbsUp,
   'gratitude': Heart,
-  'abundance': Zap,
-  'anger': Flame,
-  'idea': Lightbulb,
-  'discover': Compass,
-  'testing': FlaskConical,
-  'improvement': TrendingUp,
+  'goals': TrendingUp,
+  'creativity': Lightbulb,
+  'journal': Book,
+  'relationships': HeartHandshake,
 };
 
 export const getIconForStackId = (stackId: string) => {
