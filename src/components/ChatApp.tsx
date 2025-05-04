@@ -26,6 +26,8 @@ import ChatInput from './ChatInput';
 import StackOptions from './StackOptions';
 import ChatHistory from './ChatHistory';
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 // Types
 interface Message {
@@ -59,6 +61,11 @@ interface Conversation {
   timestamp: string;
 }
 
+interface UserApiKeys {
+  notion_api_key: string | null;
+  clickup_api_key: string | null;
+}
+
 const ChatApp: React.FC = () => {
   // State
   const [activeTab, setActiveTab] = useState('personal');
@@ -68,7 +75,6 @@ const ChatApp: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showApiKeys, setShowApiKeys] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [apiKeys, setApiKeys] = useState({
     claude: '',
@@ -86,6 +92,7 @@ const ChatApp: React.FC = () => {
   const [showHistory, setShowHistory] = useState(false);
   
   const { toast } = useToast();
+  const { user } = useAuth();
 
   // Stack options and questions
   const stackOptions: StackOption[] = [
@@ -142,6 +149,52 @@ const ChatApp: React.FC = () => {
     ]
   };
 
+  // Check user auth status and fetch user info
+  useEffect(() => {
+    if (user) {
+      setCurrentUser({
+        id: user.id,
+        name: user.email?.split('@')[0] || 'User',
+        email: user.email || '',
+        avatar: ''
+      });
+      
+      // Check connections
+      checkConnections();
+    }
+  }, [user]);
+
+  // Check if the user has connected their services
+  const checkConnections = async () => {
+    if (!user) return;
+    
+    // Supabase is always connected if the user is logged in
+    const newConnectionState = { supabase: true, notion: false, clickup: false };
+    
+    try {
+      // Check if the user has Notion and ClickUp API keys
+      const { data, error } = await supabase
+        .from('user_api_keys')
+        .select('notion_api_key, clickup_api_key')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching API keys:', error);
+        return;
+      }
+      
+      if (data) {
+        newConnectionState.notion = !!data.notion_api_key;
+        newConnectionState.clickup = !!data.clickup_api_key;
+      }
+      
+      setIsConnected(newConnectionState);
+    } catch (error) {
+      console.error('Error checking connections:', error);
+    }
+  };
+
   // Helper function to save current conversation
   const saveCurrentConversation = () => {
     if (messages.length === 0) return;
@@ -166,7 +219,7 @@ const ChatApp: React.FC = () => {
       type,
       stackId: activeStack || undefined,
       messages: [...messages],
-      timestamp: new Date().toLocaleString()
+      timestamp: new Date().toISOString()
     };
     
     setConversations(prev => [newConversation, ...prev]);
@@ -310,53 +363,44 @@ const ChatApp: React.FC = () => {
     }]);
   };
 
-  const toggleConnection = (service: 'supabase' | 'notion' | 'clickup') => {
-    setIsConnected({
-      ...isConnected,
-      [service]: !isConnected[service]
-    });
+  // Updated to use Supabase to store API keys
+  const toggleConnection = async (service: 'supabase' | 'notion' | 'clickup') => {
+    if (service === 'supabase') {
+      // Supabase connection can't be toggled, it's always on when logged in
+      return;
+    }
+    
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to manage connections",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // For notion and clickup, show the API keys modal
+    setShowApiKeys(true);
   };
   
-  const handleLogin = () => {
-    // Simulate login
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoggedIn(true);
-      setCurrentUser({
-        id: 'user123',
-        name: 'Demo User',
-        email: 'user@example.com',
-        avatar: '/api/placeholder/32/32'
-      });
-      setIsLoading(false);
-      
-      // Auto connect to databases after login
+  // Updated to use the Auth context
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setMessages([]);
       setIsConnected({
-        supabase: true,
+        supabase: false,
         notion: false,
         clickup: false
       });
-
-      // Store user in localStorage for persistent login
-      localStorage.setItem('chatAppUser', JSON.stringify({
-        id: 'user123',
-        name: 'Demo User',
-        email: 'user@example.com',
-        avatar: '/api/placeholder/32/32'
-      }));
-    }, 1000);
-  };
-  
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    setCurrentUser(null);
-    setMessages([]);
-    setIsConnected({
-      supabase: false,
-      notion: false,
-      clickup: false
-    });
-    localStorage.removeItem('chatAppUser');
+    } catch (error) {
+      console.error("Error signing out:", error);
+      toast({
+        title: "Error",
+        description: "Failed to sign out",
+        variant: "destructive"
+      });
+    }
   };
   
   const updateApiKey = (provider: string, value: string) => {
@@ -366,23 +410,8 @@ const ChatApp: React.FC = () => {
     });
   };
 
-  // Check if user is already logged in
-  useEffect(() => {
-    const savedUser = localStorage.getItem('chatAppUser');
-    if (savedUser) {
-      setIsLoggedIn(true);
-      setCurrentUser(JSON.parse(savedUser));
-      setIsConnected({
-        supabase: true,
-        notion: false,
-        clickup: false
-      });
-    }
-  }, []);
-
-  // Render login screen if not logged in
-  if (!isLoggedIn) {
-    return <LoginScreen onLogin={handleLogin} isLoading={isLoading} />;
+  if (!user) {
+    return null; // The ProtectedRoute component will handle the redirect
   }
 
   return (
@@ -625,7 +654,11 @@ const ChatApp: React.FC = () => {
       {/* API Keys Modal */}
       <ApiKeysModal 
         isOpen={showApiKeys}
-        onClose={() => setShowApiKeys(false)}
+        onClose={() => {
+          setShowApiKeys(false);
+          // Refresh connections after modal is closed
+          checkConnections();
+        }}
         apiKeys={apiKeys}
         updateApiKey={updateApiKey}
       />

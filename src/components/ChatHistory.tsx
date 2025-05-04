@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { MessageSquare, ClipboardList, formatDistance } from 'lucide-react';
+import { MessageSquare, ClipboardList } from 'lucide-react';
 import { stackIcons } from './ChatIcons';
 
 interface Message {
