@@ -32,6 +32,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
       case 'creativity': return 'Creativity';
       case 'journal': return 'Journal';
       case 'relationships': return 'Relationships';
+      case 'idea': return 'Idea';
       default: return stack;
     }
   };

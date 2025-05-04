@@ -25,6 +25,7 @@ export const stackIcons: Record<string, typeof MessageSquare> = {
   'creativity': Lightbulb,
   'journal': Book,
   'relationships': HeartHandshake,
+  'idea': PenTool,
 };
 
 export const getIconForStackId = (stackId: string) => {

@@ -109,7 +109,8 @@ const ChatApp: React.FC = () => {
     { id: 'goals', name: 'Goals', icon: <TrendingUp className="h-5 w-5" />, color: 'bg-green-500' },
     { id: 'creativity', name: 'Creativity', icon: <Lightbulb className="h-5 w-5" />, color: 'bg-yellow-500' },
     { id: 'journal', name: 'Journal', icon: <Book className="h-5 w-5" />, color: 'bg-purple-500' },
-    { id: 'relationships', name: 'Relationships', icon: <HeartHandshake className="h-5 w-5" />, color: 'bg-red-500' }
+    { id: 'relationships', name: 'Relationships', icon: <HeartHandshake className="h-5 w-5" />, color: 'bg-red-500' },
+    { id: 'idea', name: 'Idea', icon: <PenTool className="h-5 w-5" />, color: 'bg-indigo-500' }
   ];
 
   const stackQuestions: Record<string, string[]> = {
@@ -148,6 +149,49 @@ const ChatApp: React.FC = () => {
       "What quality do you most appreciate about this person?",
       "What's one way you could strengthen this relationship?",
       "How do healthy relationships contribute to your wellbeing?"
+    ],
+    idea: [
+      // Section 1: Framing & Identification
+      "What would you like to title this emerging idea or opportunity?",
+      "Which domain of business does this affect? (production, profit, process, or protection)",
+      "What specific problem or opportunity triggered this idea for you?",
+      
+      // Section 2: Idea Clarification
+      "In one or two sentences, what is the core concept of your idea?",
+      "How does this idea connect to your 3-year vision and 1-year chief aim?",
+      "What need or 'job-to-be-done' does this idea address for you or others?",
+      
+      // Section 3: Emotional Intelligence
+      "What emotions arise when you consider pursuing this idea?",
+      "What story or beliefs are you telling yourself about this idea's potential?",
+      "How might these emotions be influencing your perception of the idea's value?",
+      
+      // Section 4: Evidence Building
+      "What is one measurable fact that supports this idea's viability?",
+      "Why is this particular fact significant to your decision-making process?",
+      "What concise label would capture the essence of this supporting fact?",
+      "Would you like to add another supporting fact? (If yes, we'll repeat the last three questions)",
+      
+      // Section 5: Impact Assessment
+      "If successfully executed, what specific positive outcomes would this idea create for you and others?",
+      "If not pursued, what specific opportunities might be missed or problems left unsolved?",
+      "How does this idea's potential impact compare to other initiatives you could pursue?",
+      
+      // Section 6: Resource Reality Check
+      "What key resources (time, money, skills, relationships) are required to execute this idea?",
+      "Which of these resources do you already possess, and which would you need to acquire?",
+      "What is the minimum viable version of this idea you could test quickly?",
+      
+      // Section 7: Alignment & Decision
+      "On a scale of 1-10, how aligned is this idea with your 1-year chief aim? What's your reasoning?",
+      "What single insight or revelation has emerged from exploring this idea?",
+      "What immediate, specific action will you take in the next 48 hours to advance or test this idea?",
+      
+      // Section 8: Final Check
+      "Does this idea pass the test to become a viable idea you should implement?",
+      "When should you implement it? (now, later date, undecided, or conditional on other outcome)",
+      "Would you like to dive deeper into this idea?",
+      "Why would you like to dive deeper, and what would you like to figure out?"
     ]
   };
 
@@ -256,7 +300,12 @@ const ChatApp: React.FC = () => {
         if (questionIndex < currentStackQuestions.length) {
           botResponse = currentStackQuestions[questionIndex];
         } else {
-          botResponse = "Thanks for completing this reflection stack! Would you like to try another?";
+          if (activeStack === 'idea') {
+            // For idea assistant, suggest frameworks based on responses
+            botResponse = "Thank you for working through this idea evaluation process. Based on your responses, would you like me to guide you through a specific framework to further develop this idea?";
+          } else {
+            botResponse = "Thanks for completing this reflection stack! Would you like to try another?";
+          }
           setIsStackMode(false);
           setActiveStack(null);
         }
@@ -374,9 +423,17 @@ const ChatApp: React.FC = () => {
     
     setIsStackMode(true);
     setActiveStack(stackId);
+
+    let welcomeMessage = "";
+    if (stackId === 'idea') {
+      welcomeMessage = "Welcome to the Idea Assistant! I'm here to help you flesh out your idea and determine if it aligns with your goals. Let's start with the first question.";
+    } else {
+      welcomeMessage = `Starting ${stackOptions.find(s => s.id === stackId)!.name} conversation...`;
+    }
+    
     setMessages([{
       id: Date.now(),
-      text: `Starting ${stackOptions.find(s => s.id === stackId)!.name} conversation...`,
+      text: welcomeMessage,
       sender: 'system',
       timestamp: new Date().toLocaleTimeString()
     }, {
