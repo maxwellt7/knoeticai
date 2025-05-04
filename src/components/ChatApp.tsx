@@ -16,7 +16,8 @@ import {
   User, 
   LogOut, 
   Key,
-  History
+  History,
+  Circle
 } from 'lucide-react';
 import ChatMessage from './ChatMessage';
 import DataSourceItem from './DataSourceItem';
@@ -27,7 +28,7 @@ import StackOptions from './StackOptions';
 import ChatHistory from './ChatHistory';
 import AssistantSelection from './AssistantSelection';
 import ChatInterface from './ChatInterface';
-import { Button } from '@/components/ui/button'; // Added missing Button import
+import { Button } from '@/components/ui/button';
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -447,9 +448,9 @@ const ChatApp: React.FC = () => {
       <div className="flex items-center justify-between p-4">
         <div className="flex items-center">
           <div className="text-purple-500 mr-2">
-            <MessageSquare className="h-6 w-6" />
+            <Circle className="h-6 w-6" fill="#9580ff" stroke="#9580ff" />
           </div>
-          <h1 className="text-xl font-semibold text-white">Multi-Agent Chat</h1>
+          <h1 className="text-xl font-semibold text-white">Knoetic</h1>
         </div>
         
         <div className="flex items-center space-x-4">

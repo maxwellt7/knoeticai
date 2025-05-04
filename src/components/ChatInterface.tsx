@@ -62,13 +62,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const getAssistantTitle = () => {
     switch (activeAssistant) {
       case 'personal':
-        return 'Personal Assistant';
+        return 'Knoetic Personal';
       case 'business':
-        return 'Business Assistant';
+        return 'Knoetic Business';
       case 'stack':
-        return 'Stack Assistant';
+        return 'Knoetic Stack';
       default:
-        return 'Assistant';
+        return 'Knoetic';
     }
   };
 
@@ -99,7 +99,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         </Button>
         
         <div className="p-2 rounded-full bg-[#2d2f3a] text-white mr-3">
-          <User className="h-5 w-5" />
+          <Circle className="h-5 w-5" fill="#9580ff" stroke="#9580ff" />
         </div>
         
         <div className="flex-1">
