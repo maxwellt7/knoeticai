@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { MessageSquare, Briefcase } from 'lucide-react';
+import { MessageSquare, Briefcase, Circle } from 'lucide-react';
 import { getIconForStackId } from './ChatIcons';
 
 interface AssistantSelectionProps {
