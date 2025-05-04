@@ -20,7 +20,8 @@ import {
   Circle,
   Book,
   HeartHandshake,
-  PenTool
+  PenTool,
+  Bug
 } from 'lucide-react';
 import ChatMessage from './ChatMessage';
 import DataSourceItem from './DataSourceItem';
@@ -35,6 +36,9 @@ import { Button } from '@/components/ui/button';
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import OpenAIKeyModal, { hasStoredApiKey, initFromStoredKey } from './OpenAIKeyModal';
+import { isOpenAIInitialized } from '@/lib/services/openai';
+import { assistantManager } from '@/lib/services/assistantManager';
 
 // Types
 interface Message {
@@ -74,6 +78,8 @@ interface UserApiKeys {
 }
 
 const ChatApp: React.FC = () => {
+  console.log('ChatApp component rendering'); // Debug log
+  
   // State
   const [activeTab, setActiveTab] = useState('personal');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -98,9 +104,25 @@ const ChatApp: React.FC = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [showSelection, setShowSelection] = useState(true);
+  const [showDebug, setShowDebug] = useState(false); // Debug panel visibility
+  const [showOpenAIKeyModal, setShowOpenAIKeyModal] = useState(false);
+  const [hasError, setHasError] = useState(false);
   
   const { toast } = useToast();
   const { user } = useAuth();
+
+  // Adding test message for debugging
+  useEffect(() => {
+    // Add a debug message to see if messages are rendering
+    setMessages([{
+      id: Date.now(),
+      text: "DEBUG: This is a test message to see if rendering works.",
+      sender: 'system',
+      timestamp: new Date().toLocaleTimeString()
+    }]);
+    
+    console.log('Debug message added to state');
+  }, []);
 
   // Stack options and questions
   const stackOptions: StackOption[] = [
@@ -197,6 +219,8 @@ const ChatApp: React.FC = () => {
 
   // Check user auth status and fetch user info
   useEffect(() => {
+    console.log('User auth effect running, user:', user); // Debug log
+    
     if (user) {
       setCurrentUser({
         id: user.id,
@@ -213,6 +237,8 @@ const ChatApp: React.FC = () => {
   // Check if the user has connected their services
   const checkConnections = async () => {
     if (!user) return;
+    
+    console.log('Checking connections for user:', user.id); // Debug log
     
     // Supabase is always connected if the user is logged in
     const newConnectionState = { supabase: true, notion: false, clickup: false };
@@ -236,6 +262,7 @@ const ChatApp: React.FC = () => {
       }
       
       setIsConnected(newConnectionState);
+      console.log('Connection state updated:', newConnectionState); // Debug log
     } catch (error) {
       console.error('Error checking connections:', error);
     }
@@ -274,67 +301,99 @@ const ChatApp: React.FC = () => {
       title: "Conversation saved",
       description: "Your chat has been saved to history",
     });
+    
+    console.log('Conversation saved:', newConversation); // Debug log
   };
 
   // Handlers
-  const handleSendMessage = (inputMessage: string) => {
-    // Add user message
-    setMessages([...messages, {
+  const handleSendMessage = async (inputMessage: string) => {
+    if (!inputMessage.trim()) return;
+    
+    setIsLoading(true);
+    
+    // Find the current conversation if it exists
+    const currentConversation = conversations.find(conv => {
+      // Match by type and stack
+      if (conv.type === 'stack' && isStackMode && conv.stackId === activeStack) {
+        // Compare first few messages to identify the same stack conversation
+        return conv.messages.length > 0 && 
+          messages.length > 0 && 
+          conv.messages[0].text === messages[0].text;
+      } else if (conv.type === 'business' && activeTab === 'business') {
+        // For business, look at the most recent business conversation
+        return true;
+      } else if (conv.type === 'personal' && activeTab === 'personal' && !isStackMode) {
+        // For personal, look at the most recent personal conversation
+        return true;
+      }
+      return false;
+    });
+    
+    const conversationId = currentConversation?.id;
+    
+    // Add the user message
+    const userMessage: Message = {
       id: Date.now(),
       text: inputMessage,
       sender: 'user',
       timestamp: new Date().toLocaleTimeString()
-    }]);
+    };
     
-    setIsLoading(true);
+    setMessages(prev => [...prev, userMessage]);
     
-    // Simulate response based on active tab
-    setTimeout(() => {
-      let botResponse = '';
+    try {
+      // Get response from appropriate assistant
+      let botResponse: string;
       
-      if (isStackMode && activeStack) {
-        // Get next question from the stack
-        const currentStackQuestions = stackQuestions[activeStack];
-        const questionIndex = messages.filter(m => m.sender === 'bot' && m.stack === activeStack).length;
-        
-        if (questionIndex < currentStackQuestions.length) {
-          botResponse = currentStackQuestions[questionIndex];
-        } else {
-          if (activeStack === 'idea') {
-            // For idea assistant, suggest frameworks based on responses
-            botResponse = "Thank you for working through this idea evaluation process. Based on your responses, would you like me to guide you through a specific framework to further develop this idea?";
-          } else {
-            botResponse = "Thanks for completing this reflection stack! Would you like to try another?";
-          }
-          setIsStackMode(false);
-          setActiveStack(null);
-        }
-        
-        setMessages(prev => [...prev, {
-          id: Date.now() + 1,
-          text: botResponse,
-          sender: 'bot',
-          stack: activeStack,
-          timestamp: new Date().toLocaleTimeString()
-        }]);
+      // If OpenAI is not initialized, handle without AI
+      if (!isOpenAIInitialized()) {
+        // Display a message about needing an API key
+        botResponse = "Please add your OpenAI API key to enable AI-powered responses.";
+        setShowOpenAIKeyModal(true);
+      } else if (isStackMode && activeStack) {
+        const assistant = assistantManager.getAssistant(activeStack);
+        botResponse = await assistant.sendMessage(inputMessage);
+      } else if (activeTab === 'business') {
+        const assistant = assistantManager.getAssistant('business');
+        botResponse = await assistant.sendMessage(inputMessage);
       } else {
-        // Regular chat mode
-        if (activeTab === 'personal') {
-          botResponse = "I've checked your Supabase and Notion data. Based on your personal patterns, I suggest focusing on your health goals today. Your sleep data shows improvement!";
-        } else if (activeTab === 'business') {
-          botResponse = "According to your ClickUp and Notion workspace, you have 3 high-priority tasks due tomorrow. Your 'Website Redesign' project is 78% complete.";
-        }
-        
-        setMessages(prev => [...prev, {
-          id: Date.now() + 1,
-          text: botResponse,
-          sender: 'bot',
-          timestamp: new Date().toLocaleTimeString()
-        }]);
+        const assistant = assistantManager.getAssistant('personal');
+        botResponse = await assistant.sendMessage(inputMessage);
       }
       
+      // Add the bot response
+      const botMessage: Message = {
+        id: Date.now(),
+        text: botResponse,
+        sender: 'bot',
+        stack: isStackMode ? activeStack : undefined,
+        timestamp: new Date().toLocaleTimeString()
+      };
+      
+      const updatedMessages = [...messages, userMessage, botMessage];
+      setMessages(updatedMessages);
+      
+      // If this is part of an existing conversation, update it
+      if (conversationId) {
+        await updateConversation(conversationId, updatedMessages);
+      }
+      // Otherwise, if we have enough messages, save as a new conversation
+      else if (updatedMessages.length >= 4) {
+        await saveCurrentConversation();
+      }
+    } catch (error) {
+      console.error('Error in handleSendMessage:', error);
+      
+      // Add error message
+      setMessages(prev => [...prev, {
+        id: Date.now() + 1,
+        text: "I'm sorry, there was an error processing your message. Please try again.",
+        sender: 'bot',
+        timestamp: new Date().toLocaleTimeString()
+      }]);
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const loadConversation = (conversationId: string) => {
@@ -373,9 +432,13 @@ const ChatApp: React.FC = () => {
       title: "Conversation loaded",
       description: `Loaded "${conversation.title}"`,
     });
+    
+    console.log('Conversation loaded:', conversation); // Debug log
   };
 
   const handleSelectAssistant = (type: 'personal' | 'business' | 'stack') => {
+    console.log('Assistant selected:', type); // Debug log
+    
     setActiveTab(type);
     if (type === 'stack') {
       // Show stack options in sidebar
@@ -385,9 +448,19 @@ const ChatApp: React.FC = () => {
       setActiveStack(null);
     }
     setShowSelection(false);
+    
+    // Add a welcome message
+    setMessages([{
+      id: Date.now(),
+      text: `Welcome to the ${type} assistant! Type a message to get started.`,
+      sender: 'system',
+      timestamp: new Date().toLocaleTimeString()
+    }]);
   };
 
   const handleSelectStack = (stackId: string) => {
+    console.log('Stack selected:', stackId); // Debug log
+    
     setActiveTab('personal');
     setIsStackMode(true);
     setActiveStack(stackId);
@@ -406,6 +479,8 @@ const ChatApp: React.FC = () => {
     // Reset states
     setMessages([]);
     setShowSelection(true);
+    
+    console.log('Back to selection'); // Debug log
   };
 
   const changeConversationType = (newTab: string) => {
@@ -423,6 +498,8 @@ const ChatApp: React.FC = () => {
     
     // Clear the messages
     setMessages([]);
+    
+    console.log('Conversation type changed to:', newTab); // Debug log
   };
 
   const startStackMode = (stackId: string) => {
@@ -453,6 +530,8 @@ const ChatApp: React.FC = () => {
       stack: stackId,
       timestamp: new Date().toLocaleTimeString()
     }]);
+    
+    console.log('Stack mode started:', stackId); // Debug log
   };
 
   // Updated to use Supabase to store API keys
@@ -473,6 +552,7 @@ const ChatApp: React.FC = () => {
     
     // For notion and clickup, show the API keys modal
     setShowApiKeys(true);
+    console.log('Toggle connection for:', service); // Debug log
   };
   
   // Updated to use the Auth context
@@ -485,6 +565,8 @@ const ChatApp: React.FC = () => {
         notion: false,
         clickup: false
       });
+      
+      console.log('User logged out'); // Debug log
     } catch (error) {
       console.error("Error signing out:", error);
       toast({
@@ -500,11 +582,32 @@ const ChatApp: React.FC = () => {
       ...apiKeys,
       [provider]: value
     });
+    
+    console.log('API key updated for:', provider); // Debug log
   };
 
+  // Add this useEffect after the existing useEffect that checks user auth status
+  useEffect(() => {
+    if (user) {
+      // Check if OpenAI API key is stored
+      if (!hasStoredApiKey()) {
+        setShowOpenAIKeyModal(true);
+      } else {
+        // Initialize OpenAI client with stored key
+        initFromStoredKey();
+      }
+    }
+  }, [user]);
+
   if (!user) {
+    console.log('No user, redirecting to login'); // Debug log
     return null; // The ProtectedRoute component will handle the redirect
   }
+
+  // DEBUG: Add stack questions logging
+  console.log('Stack questions available:', Object.keys(stackQuestions));
+  console.log('Current messages:', messages);
+  console.log('Show selection:', showSelection);
 
   return (
     <div className="flex flex-col h-screen bg-[#191b24]">
@@ -518,6 +621,17 @@ const ChatApp: React.FC = () => {
         </div>
         
         <div className="flex items-center space-x-4">
+          {/* Debug button */}
+          <Button
+            onClick={() => setShowDebug(!showDebug)}
+            variant="ghost"
+            size="icon"
+            className="text-white"
+            title="Debug Mode"
+          >
+            <Bug className="h-5 w-5" />
+          </Button>
+          
           {/* Settings button */}
           <Button
             onClick={() => setShowSettings(!showSettings)}
@@ -562,6 +676,27 @@ const ChatApp: React.FC = () => {
         </div>
       </div>
       
+      {/* Debug Panel */}
+      {showDebug && (
+        <div className="mx-4 mb-4 p-4 bg-[#22242f] text-white rounded-lg border border-white/10">
+          <h2 className="font-bold mb-2">Debug Information</h2>
+          <div className="text-xs font-mono">
+            <p>Active Tab: {activeTab}</p>
+            <p>Stack Mode: {isStackMode ? 'true' : 'false'}</p>
+            <p>Active Stack: {activeStack || 'none'}</p>
+            <p>Show Selection: {showSelection ? 'true' : 'false'}</p>
+            <p>Message Count: {messages.length}</p>
+            <p>User: {user ? user.email : 'not logged in'}</p>
+            <details>
+              <summary>Messages</summary>
+              <pre className="mt-2 bg-black p-2 rounded overflow-auto max-h-40">
+                {JSON.stringify(messages, null, 2)}
+              </pre>
+            </details>
+          </div>
+        </div>
+      )}
+      
       {/* Main content */}
       <div className="flex-1 px-4 pb-4 overflow-hidden">
         {showSelection ? (
@@ -590,6 +725,19 @@ const ChatApp: React.FC = () => {
                 conversations={conversations}
                 onSelectConversation={loadConversation}
               />
+              
+              {/* Fallback debug message rendering - in case ChatInterface isn't working */}
+              {messages.length > 0 && showDebug && (
+                <div className="mt-4 bg-yellow-800 p-4 rounded-lg">
+                  <h3 className="font-bold text-yellow-200">Fallback Message Display:</h3>
+                  {messages.map(msg => (
+                    <div key={msg.id} className="my-2 p-2 bg-yellow-900 rounded">
+                      <p><strong>{msg.sender}:</strong> {msg.text}</p>
+                      <p className="text-xs opacity-75">{msg.timestamp}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -605,6 +753,12 @@ const ChatApp: React.FC = () => {
         }}
         apiKeys={apiKeys}
         updateApiKey={updateApiKey}
+      />
+      
+      {/* OpenAI API Key Modal */}
+      <OpenAIKeyModal 
+        isOpen={showOpenAIKeyModal}
+        onClose={() => setShowOpenAIKeyModal(false)}
       />
     </div>
   );

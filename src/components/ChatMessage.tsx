@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { stackIcons } from './ChatIcons';
 
@@ -10,12 +9,11 @@ interface ChatMessageProps {
   stack?: string;
 }
 
-const ChatMessage: React.FC<ChatMessageProps> = ({
-  text,
-  sender,
-  timestamp,
-  stack,
-}) => {
+const ChatMessage: React.FC<ChatMessageProps> = (props) => {
+  const { text, sender, timestamp, stack } = props;
+  
+  console.log('Rendering ChatMessage:', text.substring(0, 20) + '...', sender);
+  
   const getStackIcon = () => {
     if (stack && stack in stackIcons) {
       const IconComponent = stackIcons[stack];
@@ -38,7 +36,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
   };
   
   return (
-    <div className={`flex mb-4 ${sender === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}>
+    <div className={`flex mb-4 ${sender === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}
+         style={{border: '1px solid rgba(255,255,255,0.1)', padding: '4px', borderRadius: '4px'}}>
       <div
         className={`max-w-[85%] md:max-w-[75%] rounded-lg px-4 py-3 shadow-md ${
           sender === 'user'
@@ -56,7 +55,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
             </span>
           </div>
         )}
-        <p className="text-sm md:text-base">{text}</p>
+        <p className="text-sm md:text-base whitespace-pre-wrap">{text}</p>
         <div className="text-xs mt-2 opacity-60 text-right">
           {timestamp}
         </div>

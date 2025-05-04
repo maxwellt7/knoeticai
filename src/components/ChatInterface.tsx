@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
 import { Button } from '@/components/ui/button';
@@ -23,6 +22,20 @@ interface Conversation {
   timestamp: string;
 }
 
+interface ChatHistoryProps {
+  conversations: Conversation[];
+  onSelectConversation: (conversationId: string) => void;
+}
+
+interface ChatInputProps {
+  onSendMessage: (message: string) => void;
+  isLoading: boolean;
+  activeTab?: string;
+  activeStack?: string | null;
+  stackOptions?: any[];
+  onExitStack?: () => void;
+}
+
 interface ChatInterfaceProps {
   activeAssistant: 'personal' | 'business' | 'stack';
   messages: Message[];
@@ -43,6 +56,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onSelectConversation
 }) => {
   const [showHistory, setShowHistory] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    // Debug log messages
+    console.log('ChatInterface rendering with messages:', messages);
+  }, [messages]);
 
   return (
     <div className="h-full flex flex-col">
@@ -86,14 +110,25 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         )}
         
         <div className="flex-1 flex flex-col h-full overflow-hidden">
-          <div className="flex-1 overflow-y-auto pr-1 mb-4 space-y-4">
+          <div 
+            className="flex-1 overflow-y-auto pr-1 mb-4 space-y-4 relative"
+            style={{
+              minHeight: "300px", 
+              background: "rgba(25, 27, 36, 0.5)",
+              padding: "20px",
+              borderRadius: "8px"
+            }}
+          >
             {messages.length > 0 ? (
-              messages.map((message) => (
-                <ChatMessage
-                  key={message.id}
-                  message={message}
-                />
-              ))
+              <>
+                {messages.map((message) => (
+                  <ChatMessage
+                    key={message.id}
+                    {...message}
+                  />
+                ))}
+                <div ref={messagesEndRef} />
+              </>
             ) : (
               <div className="flex items-center justify-center h-full">
                 <p className="text-gray-500">Type a message to start a conversation</p>
@@ -113,6 +148,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           <ChatInput
             onSendMessage={onSendMessage}
             isLoading={isLoading}
+            activeTab={activeAssistant}
+            activeStack={null}
+            onExitStack={() => {}}
           />
         </div>
       </div>
