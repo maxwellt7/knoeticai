@@ -1,0 +1,506 @@
+
+import React, { useState, useEffect } from 'react';
+import { 
+  MessageSquare, 
+  Database, 
+  ClipboardList, 
+  ThumbsUp, 
+  Heart, 
+  Zap, 
+  Flame, 
+  Lightbulb, 
+  Compass, 
+  FlaskConical, 
+  TrendingUp, 
+  Lock, 
+  Settings, 
+  User, 
+  LogOut, 
+  Key 
+} from 'lucide-react';
+import ChatMessage from './ChatMessage';
+import DataSourceItem from './DataSourceItem';
+import ApiKeysModal from './ApiKeysModal';
+import LoginScreen from './LoginScreen';
+import ChatInput from './ChatInput';
+import StackOptions from './StackOptions';
+
+// Types
+interface Message {
+  id: number;
+  text: string;
+  sender: 'user' | 'bot' | 'system';
+  timestamp: string;
+  stack?: string;
+}
+
+interface StackOption {
+  id: string;
+  name: string;
+  icon: JSX.Element;
+  color: string;
+}
+
+interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  avatar: string;
+}
+
+const ChatApp: React.FC = () => {
+  // State
+  const [activeTab, setActiveTab] = useState('personal');
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isStackMode, setIsStackMode] = useState(false);
+  const [activeStack, setActiveStack] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showApiKeys, setShowApiKeys] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+  const [apiKeys, setApiKeys] = useState({
+    claude: '',
+    openai: '',
+    grok: '',
+    openrouter: ''
+  });
+  const [isConnected, setIsConnected] = useState({
+    supabase: false,
+    notion: false,
+    clickup: false
+  });
+
+  // Stack options and questions
+  const stackOptions: StackOption[] = [
+    { id: 'happy', name: 'Happy', icon: <ThumbsUp className="h-5 w-5" />, color: 'bg-yellow-500' },
+    { id: 'gratitude', name: 'Gratitude', icon: <Heart className="h-5 w-5" />, color: 'bg-pink-500' },
+    { id: 'abundance', name: 'Abundance', icon: <Zap className="h-5 w-5" />, color: 'bg-purple-500' },
+    { id: 'anger', name: 'Anger', icon: <Flame className="h-5 w-5" />, color: 'bg-red-500' },
+    { id: 'idea', name: 'Idea', icon: <Lightbulb className="h-5 w-5" />, color: 'bg-blue-500' },
+    { id: 'discover', name: 'Discover', icon: <Compass className="h-5 w-5" />, color: 'bg-green-500' },
+    { id: 'testing', name: 'Testing', icon: <FlaskConical className="h-5 w-5" />, color: 'bg-orange-500' },
+    { id: 'improvement', name: 'Improvement', icon: <TrendingUp className="h-5 w-5" />, color: 'bg-indigo-500' }
+  ];
+
+  const stackQuestions: Record<string, string[]> = {
+    happy: [
+      "What made you smile today?",
+      "What's one positive thing that happened recently?",
+      "How can you spread happiness to someone else today?"
+    ],
+    gratitude: [
+      "What are three things you're grateful for right now?",
+      "Who has helped you recently that you appreciate?",
+      "What's something in your environment you're thankful for?"
+    ],
+    abundance: [
+      "What resources do you have in abundance right now?",
+      "Where do you see opportunities for growth?",
+      "How can you create more value with what you already have?"
+    ],
+    anger: [
+      "What triggered this feeling?",
+      "What's underneath this anger?",
+      "What constructive action can you take with this energy?"
+    ],
+    idea: [
+      "Describe your idea in one sentence.",
+      "What problem does this idea solve?",
+      "What's the next step to develop this idea further?"
+    ],
+    discover: [
+      "What are you curious about right now?",
+      "What patterns have you noticed lately?",
+      "What would you like to learn more about?"
+    ],
+    testing: [
+      "What hypothesis are you testing?",
+      "How will you measure success?",
+      "What's the smallest experiment you could run?"
+    ],
+    improvement: [
+      "What specific area would you like to improve?",
+      "What's one small step you could take today?",
+      "How will you track your progress?"
+    ]
+  };
+
+  // Handlers
+  const handleSendMessage = (inputMessage: string) => {
+    // Add user message
+    setMessages([...messages, {
+      id: Date.now(),
+      text: inputMessage,
+      sender: 'user',
+      timestamp: new Date().toLocaleTimeString()
+    }]);
+    
+    setIsLoading(true);
+    
+    // Simulate response based on active tab
+    setTimeout(() => {
+      let botResponse = '';
+      
+      if (isStackMode && activeStack) {
+        // Get next question from the stack
+        const currentStackQuestions = stackQuestions[activeStack];
+        const questionIndex = messages.filter(m => m.sender === 'bot' && m.stack === activeStack).length;
+        
+        if (questionIndex < currentStackQuestions.length) {
+          botResponse = currentStackQuestions[questionIndex];
+        } else {
+          botResponse = "Thanks for completing this reflection stack! Would you like to try another?";
+          setIsStackMode(false);
+          setActiveStack(null);
+        }
+        
+        setMessages(prev => [...prev, {
+          id: Date.now() + 1,
+          text: botResponse,
+          sender: 'bot',
+          stack: activeStack,
+          timestamp: new Date().toLocaleTimeString()
+        }]);
+      } else {
+        // Regular chat mode
+        if (activeTab === 'personal') {
+          botResponse = "I've checked your Supabase and Notion data. Based on your personal patterns, I suggest focusing on your health goals today. Your sleep data shows improvement!";
+        } else if (activeTab === 'business') {
+          botResponse = "According to your ClickUp and Notion workspace, you have 3 high-priority tasks due tomorrow. Your 'Website Redesign' project is 78% complete.";
+        }
+        
+        setMessages(prev => [...prev, {
+          id: Date.now() + 1,
+          text: botResponse,
+          sender: 'bot',
+          timestamp: new Date().toLocaleTimeString()
+        }]);
+      }
+      
+      setIsLoading(false);
+    }, 1000);
+  };
+
+  const startStackMode = (stackId: string) => {
+    setIsStackMode(true);
+    setActiveStack(stackId);
+    setMessages([...messages, {
+      id: Date.now(),
+      text: `Starting ${stackOptions.find(s => s.id === stackId)!.name} reflection...`,
+      sender: 'system',
+      timestamp: new Date().toLocaleTimeString()
+    }, {
+      id: Date.now() + 1,
+      text: stackQuestions[stackId][0],
+      sender: 'bot',
+      stack: stackId,
+      timestamp: new Date().toLocaleTimeString()
+    }]);
+  };
+
+  const toggleConnection = (service: 'supabase' | 'notion' | 'clickup') => {
+    setIsConnected({
+      ...isConnected,
+      [service]: !isConnected[service]
+    });
+  };
+  
+  const handleLogin = () => {
+    // Simulate login
+    setIsLoading(true);
+    setTimeout(() => {
+      setIsLoggedIn(true);
+      setCurrentUser({
+        id: 'user123',
+        name: 'Demo User',
+        email: 'user@example.com',
+        avatar: '/api/placeholder/32/32'
+      });
+      setIsLoading(false);
+      
+      // Auto connect to databases after login
+      setIsConnected({
+        supabase: true,
+        notion: false,
+        clickup: false
+      });
+
+      // Store user in localStorage for persistent login
+      localStorage.setItem('chatAppUser', JSON.stringify({
+        id: 'user123',
+        name: 'Demo User',
+        email: 'user@example.com',
+        avatar: '/api/placeholder/32/32'
+      }));
+    }, 1000);
+  };
+  
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setCurrentUser(null);
+    setMessages([]);
+    setIsConnected({
+      supabase: false,
+      notion: false,
+      clickup: false
+    });
+    localStorage.removeItem('chatAppUser');
+  };
+  
+  const updateApiKey = (provider: string, value: string) => {
+    setApiKeys({
+      ...apiKeys,
+      [provider]: value
+    });
+  };
+
+  // Check if user is already logged in
+  useEffect(() => {
+    const savedUser = localStorage.getItem('chatAppUser');
+    if (savedUser) {
+      setIsLoggedIn(true);
+      setCurrentUser(JSON.parse(savedUser));
+      setIsConnected({
+        supabase: true,
+        notion: false,
+        clickup: false
+      });
+    }
+  }, []);
+
+  // Render login screen if not logged in
+  if (!isLoggedIn) {
+    return <LoginScreen onLogin={handleLogin} isLoading={isLoading} />;
+  }
+
+  return (
+    <div className="flex flex-col h-screen bg-gray-50">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 bg-white border-b shadow-sm">
+        <h1 className="text-xl font-semibold text-gray-800">Multi-Agent Chat</h1>
+        <div className="flex items-center space-x-4">
+          <div className="flex space-x-3">
+            <div className="flex items-center">
+              <div 
+                className={`h-2 w-2 rounded-full mr-2 ${isConnected.supabase ? 'bg-green-500' : 'bg-gray-300'}`} 
+              />
+              <button 
+                onClick={() => toggleConnection('supabase')}
+                className="text-sm text-gray-700 hover:text-blue-600"
+              >
+                Supabase
+              </button>
+            </div>
+            <div className="flex items-center">
+              <div 
+                className={`h-2 w-2 rounded-full mr-2 ${isConnected.notion ? 'bg-green-500' : 'bg-gray-300'}`} 
+              />
+              <button 
+                onClick={() => toggleConnection('notion')}
+                className="text-sm text-gray-700 hover:text-blue-600"
+              >
+                Notion
+              </button>
+            </div>
+            <div className="flex items-center">
+              <div 
+                className={`h-2 w-2 rounded-full mr-2 ${isConnected.clickup ? 'bg-green-500' : 'bg-gray-300'}`} 
+              />
+              <button 
+                onClick={() => toggleConnection('clickup')}
+                className="text-sm text-gray-700 hover:text-blue-600"
+              >
+                ClickUp
+              </button>
+            </div>
+          </div>
+          
+          {/* Settings dropdown */}
+          <div className="relative">
+            <button 
+              onClick={() => setShowSettings(!showSettings)}
+              className="flex items-center text-gray-700 hover:text-blue-600"
+            >
+              <Settings className="h-5 w-5" />
+            </button>
+            
+            {showSettings && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 border">
+                <button
+                  onClick={() => {
+                    setShowApiKeys(!showApiKeys);
+                    setShowSettings(false);
+                  }}
+                  className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                >
+                  <Key className="h-4 w-4 mr-2" />
+                  API Keys
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
+          
+          {/* User profile */}
+          <div className="flex items-center">
+            <span className="text-sm text-gray-700 mr-2">{currentUser?.name}</span>
+            <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-600">
+              {currentUser?.avatar ? (
+                <img src={currentUser.avatar} alt="User" className="h-8 w-8 rounded-full" />
+              ) : (
+                <User className="h-5 w-5" />
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Main content */}
+      <div className="flex h-full">
+        {/* Sidebar */}
+        <div className="w-64 bg-white border-r flex flex-col">
+          <div className="p-4 border-b">
+            <div className="flex flex-col space-y-2">
+              <button
+                onClick={() => {
+                  setActiveTab('personal');
+                  setIsStackMode(false);
+                  setActiveStack(null);
+                }}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg ${activeTab === 'personal' ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100'}`}
+              >
+                <MessageSquare className="h-5 w-5" />
+                <span>Personal Agent</span>
+              </button>
+              <button
+                onClick={() => {
+                  setActiveTab('business');
+                  setIsStackMode(false);
+                  setActiveStack(null);
+                }}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg ${activeTab === 'business' ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100'}`}
+              >
+                <ClipboardList className="h-5 w-5" />
+                <span>Business Agent</span>
+              </button>
+            </div>
+          </div>
+          
+          {/* Stack Options */}
+          <StackOptions 
+            options={stackOptions}
+            activeStack={activeStack}
+            onStackSelect={startStackMode}
+          />
+          
+          {/* Data Sources */}
+          <div className="p-4">
+            <h3 className="font-medium text-gray-700 mb-3">Data Sources</h3>
+            <div className="space-y-2">
+              <DataSourceItem 
+                name="Supabase" 
+                icon={<Database className="h-4 w-4" />}
+                isConnected={isConnected.supabase}
+              />
+              <DataSourceItem 
+                name="Notion" 
+                icon={
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M6 6H18V18H6V6Z" fill="currentColor" />
+                  </svg>
+                }
+                isConnected={isConnected.notion}
+              />
+              <DataSourceItem 
+                name="ClickUp" 
+                icon={
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M16 4H8C5.79086 4 4 5.79086 4 8V16C4 18.2091 5.79086 20 8 20H16C18.2091 20 20 18.2091 20 16V8C20 5.79086 18.2091 4 16 4Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M9 12L11 14L15 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                }
+                isConnected={isConnected.clickup}
+              />
+            </div>
+          </div>
+        </div>
+        
+        {/* Chat area */}
+        <div className="flex-1 flex flex-col">
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {messages.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-gray-500">
+                <div className="mb-4">
+                  {activeTab === 'personal' ? 
+                    <MessageSquare className="h-12 w-12 text-blue-200" /> : 
+                    <ClipboardList className="h-12 w-12 text-blue-200" />
+                  }
+                </div>
+                <p className="text-lg mb-1">No messages yet</p>
+                <p className="text-sm max-w-md text-center">
+                  {activeTab === 'personal' 
+                    ? "Chat with your personal agent to get insights about your habits, health, and personal data." 
+                    : "Chat with your business agent to track projects, tasks, and get updates on your business metrics."}
+                </p>
+              </div>
+            ) : (
+              messages.map((message) => (
+                <ChatMessage
+                  key={message.id}
+                  id={message.id}
+                  text={message.text}
+                  sender={message.sender}
+                  timestamp={message.timestamp}
+                  stack={message.stack}
+                  stackOptions={stackOptions}
+                />
+              ))
+            )}
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="max-w-3/4 rounded-lg px-4 py-2 bg-white border text-gray-800">
+                  <div className="flex space-x-1">
+                    <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                    <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                    <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Input area */}
+          <ChatInput 
+            onSendMessage={handleSendMessage}
+            isLoading={isLoading}
+            activeTab={activeTab}
+            activeStack={activeStack}
+            stackOptions={stackOptions}
+            onExitStack={() => {
+              setIsStackMode(false);
+              setActiveStack(null);
+            }}
+          />
+        </div>
+      </div>
+      
+      {/* API Keys Modal */}
+      <ApiKeysModal 
+        isOpen={showApiKeys}
+        onClose={() => setShowApiKeys(false)}
+        apiKeys={apiKeys}
+        updateApiKey={updateApiKey}
+      />
+    </div>
+  );
+};
+
+export default ChatApp;
