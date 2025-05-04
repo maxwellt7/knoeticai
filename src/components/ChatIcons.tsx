@@ -9,7 +9,8 @@ import {
   Lightbulb, 
   Compass, 
   FlaskConical, 
-  TrendingUp
+  TrendingUp,
+  Circle
 } from 'lucide-react';
 
 // Map stack IDs to their respective icons
