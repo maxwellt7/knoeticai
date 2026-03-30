@@ -2,7 +2,7 @@
 import React from 'react';
 import { getIconForStackId } from './ChatIcons';
 import DataSourceItem from './DataSourceItem';
-import { Database, Clock } from 'lucide-react';
+import { Database, Clock, MessageSquare, ClipboardType } from 'lucide-react';
 
 interface StackOption {
   id: string;
@@ -38,7 +38,7 @@ const StackOptions: React.FC<StackOptionsProps> = ({
           <span>Personal Agent</span>
         </button>
         <button className="flex items-center gap-2 p-3 text-gray-700 hover:bg-gray-50">
-          <ClipboardText size={18} />
+          <ClipboardType size={18} />
           <span>Business Agent</span>
         </button>
         <div className="border-t border-gray-200 my-2"></div>
@@ -78,7 +78,7 @@ const StackOptions: React.FC<StackOptionsProps> = ({
           />
           <DataSourceItem 
             name="Notion" 
-            icon={<ClipboardText size={18} />} 
+            icon={<ClipboardType size={18} />} 
             isConnected={isConnected.notion}
             onClick={toggleConnection ? () => toggleConnection('notion') : undefined}
             isClickable={true}
@@ -95,8 +95,5 @@ const StackOptions: React.FC<StackOptionsProps> = ({
     </div>
   );
 };
-
-// Add these imports at the top
-import { MessageSquare, ClipboardText } from 'lucide-react';
 
 export default StackOptions;
